@@ -1,0 +1,99 @@
+MyBatis配置
+
+1.导包
+2.mybatis-config.xml配置
+
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration
+  PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+  <environments default="development">
+    <environment id="development">
+      <transactionManager type="JDBC"/>
+      <dataSource type="POOLED">
+        <property name="driver" value="com.mysql.jdbc.Driver"/>
+        <property name="url" value="jdbc:mysql://localhost:3306/emp?useUnicode=true&amp;characterEncoding=utf8"/><!--库名称后面的是转utf-8的代码-->
+        <property name="username" value="root"/><!--用户名-->
+        <property name="password" value="root"/><!--密码-->
+      </dataSource>
+    </environment>
+  </environments>
+  
+ <!--对每个表的操作的xml文件-->
+<mappers>
+    <mapper resource="com/MyBatis/bean/EmpMapper.xml"/><!--每个表一个xml文件，填写对应路径-->
+    <mapper resource="com/MyBatis/bean/RoleMapper.xml"/>
+  </mappers>
+ </configuration>
+
+3.写工具类 
+	package com.MyBatis.util;
+
+import java.io.IOException;
+import java.io.InputStream;
+
+import org.apache.ibatis.io.Resources;
+import org.apache.ibatis.session.SqlSession;
+import org.apache.ibatis.session.SqlSessionFactory;
+import org.apache.ibatis.session.SqlSessionFactoryBuilder;
+
+public class MyUtil {
+	
+	public static SqlSessionFactory getSqlSessionFactory() throws IOException{
+		String resource = "mybatis-config.xml";//改路径
+		InputStream inputStream = Resources.getResourceAsStream(resource);
+		SqlSessionFactory sqlSessionFactory = new SqlSessionFactoryBuilder().build(inputStream);
+		return sqlSessionFactory;
+	}
+	
+	public static SqlSession openSession() throws IOException{
+		SqlSession session = getSqlSessionFactory().openSession();
+		return session;
+	}
+	
+}
+ 
+4.在对应的bean类下，创建对应xml文件
+ <?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.MyBatis.bean.EmpMapper"><!--更改此处为你对应的路径-->
+  <select id="selectBlog" resultType="int" parameterType="int"><!--一条查询语句,id属性为此标签的(算式调用方法),resultType为返回值类型,可以为一个bean-->
+    select * from Blog where id = #{id}							<!--parameterType为参数类型，可规定为一个bean-->
+  </select>
+</mapper>
+
+5.编写dao层方法
+	@Override
+	public  EmpBean getEmpById(int id) {
+		try {
+			SqlSession session = MyUtil.openSession();//调用工具类的方法
+			EmpBean empBean = session.selectOne("com.MyBatis.bean.EmpMapper.selectEmp", id);//用sqlsession调用对应的方法
+			session.close();//最后关闭，如果是增删改，记得提交  session.commit();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		return null;
+	}
+
+6.在mybatis-config.xml文件配置扫描包
+		<typeAliases>
+		<!--自动扫描包，默认别名为类名-->
+		<package name="com.MyBatis.bean"/>
+		</typeAliases>
+		<!--以上配好以后，在写bean路径的时候可以只写bean的类名即可-->
+		
+		<mappers>
+		<!--扫描包下的全部mapper文件-->
+		<package name="com/MyBatis/dao/inf"/>
+		</mappers>
+		<!--以上配好后，会自动扫描该报下所有mapper文件-->
+		<!--如果报错，请单独写mapper路径-->
+		 <!-- <mapper resource="com/MyBatis/dao/inf/Empdao.xml"/> -->
+
+
+	
